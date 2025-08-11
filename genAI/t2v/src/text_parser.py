@@ -503,11 +503,11 @@ if __name__ == "__main__":
     }
     
     # Save sample data
-    with open("sample_forensic_data.json", 'w') as f:
+    with open("witness.json", 'w') as f:
         json.dump(sample_data, f, indent=2)
     
     # Process the sample file
-    known_prompt, alternative_prompt = pipeline.process_forensic_text("sample_forensic_data.json")
+    known_prompt, alternative_prompt = pipeline.process_forensic_text("witness.json")
     
     print("\n" + "="*60)
     print("🎬 KNOWN SCENARIO PROMPT (DeeVid AI)")
