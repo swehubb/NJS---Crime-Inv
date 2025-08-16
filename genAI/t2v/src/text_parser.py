@@ -42,7 +42,7 @@ class ForensicTextExtractor:
         try:
             # Load spaCy model
             self.nlp = spacy.load("en_core_web_sm")
-            logger.info("✅ spaCy model loaded successfully")
+            logger.info("spaCy model loaded successfully")
             
             # Load HuggingFace models
             self.emotion_classifier = pipeline(
@@ -55,10 +55,10 @@ class ForensicTextExtractor:
                 "sentiment-analysis",
                 model="cardiffnlp/twitter-roberta-base-sentiment-latest"
             )
-            logger.info("✅ HuggingFace models loaded successfully")
+            logger.info("HuggingFace models loaded successfully")
             
         except Exception as e:
-            logger.error(f"❌ Error loading models: {e}")
+            logger.error(f"Error loading models: {e}")
             raise
     
     def load_structured_text(self, file_path: str) -> Dict:
@@ -78,7 +78,7 @@ class ForensicTextExtractor:
             return data
             
         except Exception as e:
-            logger.error(f"❌ Error loading file {file_path}: {e}")
+            logger.error(f"Error loading file {file_path}: {e}")
             return {}
     
     def _parse_plain_text_to_structure(self, text: str) -> Dict:
@@ -309,7 +309,7 @@ class ForensicTextExtractor:
                 emotions.append(sentiment_result[0]['label'])
                 
         except Exception as e:
-            logger.warning(f"⚠️ Emotion extraction failed: {e}")
+            logger.warning(f"Emotion extraction failed: {e}")
         
         return emotions
     
@@ -335,7 +335,7 @@ class ForensicTextExtractor:
             emotions_detected=self.extract_emotions(text_content)
         )
         
-        logger.info("✅ Feature extraction completed")
+        logger.info("Feature extraction completed")
         return features
 
 class DeeVidPromptGenerator:
@@ -344,7 +344,7 @@ class DeeVidPromptGenerator:
     def __init__(self):
         """Initialize OpenAI client"""
         self.client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-        logger.info("✅ OpenAI client initialized")
+        logger.info("OpenAI client initialized")
     
     def generate_known_scenario_prompt(self, features: ForensicFeatures) -> str:
         """Generate prompt for known/current information scenario"""
@@ -387,11 +387,11 @@ Emotions: {', '.join(features.emotions_detected)}
             )
             
             prompt = response.choices[0].message.content.strip()
-            logger.info("✅ Known scenario prompt generated")
+            logger.info("Known scenario prompt generated")
             return prompt[:1900]  # Ensure under 2000 characters
             
         except Exception as e:
-            logger.error(f"❌ Error generating known scenario prompt: {e}")
+            logger.error(f"Error generating known scenario prompt: {e}")
             return ""
     
     def generate_alternative_scenario_prompt(self, features: ForensicFeatures) -> str:
@@ -437,11 +437,11 @@ Consider: What if the sequence was different? What if there was a different moti
             )
             
             prompt = response.choices[0].message.content.strip()
-            logger.info("✅ Alternative scenario prompt generated")
+            logger.info("Alternative scenario prompt generated")
             return prompt[:1900]  # Ensure under 2000 characters
             
         except Exception as e:
-            logger.error(f"❌ Error generating alternative scenario prompt: {e}")
+            logger.error(f"Error generating alternative scenario prompt: {e}")
             return ""
 
 class ForensicT2VPipeline:
@@ -451,7 +451,7 @@ class ForensicT2VPipeline:
         """Initialize the complete pipeline"""
         self.extractor = ForensicTextExtractor()
         self.prompt_generator = DeeVidPromptGenerator()
-        logger.info("🚀 Forensic T2V Pipeline initialized")
+        logger.info("Forensic T2V Pipeline initialized")
     
     def process_forensic_text(self, file_path: str) -> Tuple[str, str]:
         """
@@ -460,13 +460,13 @@ class ForensicT2VPipeline:
         Returns:
             Tuple[str, str]: (known_scenario_prompt, alternative_scenario_prompt)
         """
-        logger.info(f"🔥 Processing forensic text: {file_path}")
+        logger.info(f"Processing forensic text: {file_path}")
         
         # Extract features
         features = self.extractor.extract_all_features(file_path)
         
         # Log extracted features for debugging
-        logger.info("📊 Extracted Features Summary:")
+        logger.info("Extracted Features Summary:")
         for field, value in asdict(features).items():
             if value:
                 logger.info(f"  {field}: {len(value)} items")
@@ -487,7 +487,7 @@ class ForensicT2VPipeline:
         with open(f"{output_dir}/alternative_scenario_prompt.txt", 'w', encoding='utf-8') as f:
             f.write(alternative_prompt)
         
-        logger.info(f"💾 Prompts saved to {output_dir}/")
+        logger.info(f"Prompts saved to {output_dir}/")
 
 # Example usage and testing
 if __name__ == "__main__":
@@ -516,11 +516,11 @@ if __name__ == "__main__":
     print(f"\nCharacter count: {len(known_prompt)}")
     
     print("\n" + "="*60)
-    print("🔮 ALTERNATIVE SCENARIO PROMPT (DeeVid AI)")
+    print("ALTERNATIVE SCENARIO PROMPT (DeeVid AI)")
     print("="*60)
     print(alternative_prompt)
     print(f"\nCharacter count: {len(alternative_prompt)}")
     
     # Save prompts
     pipeline.save_prompts(known_prompt, alternative_prompt)
-    print("\n✅ Prompts saved to output/ directory")
+    print("\nPrompts saved to output/ directory")
