@@ -1,10 +1,6 @@
 # UNRAVEL
 **Uncovering Narrative Reliability And Verifying Eyewitness Legitimacy**
 
-[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![OpenAI](https://img.shields.io/badge/OpenAI-GPT--3.5-green.svg)](https://openai.com)
-
 A comprehensive law enforcement tool that combines advanced Natural Language Processing, artificial intelligence, and forensic analysis techniques to process witness interviews, detect contradictions, and generate video reconstruction prompts.
 
 ## Project Overview
