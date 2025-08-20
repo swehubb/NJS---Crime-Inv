@@ -281,7 +281,7 @@ def interactive_demo():
             analyzer = WitnessReportAnalyzer()
             results = analyzer.analyze_interview(audio_path=audio_path)
             
-            individual_file = analyzer.generate_individual_witness_json(results, "single_witness")
+            individual_file = analyzer.generate_individual_witness_json(results, "witness")
             results["individual_file"] = individual_file
             
             analyzer.print_analysis_report(results)
@@ -293,7 +293,7 @@ def interactive_demo():
                 analyzer = WitnessReportAnalyzer()
                 results = analyzer.analyze_interview(transcript_text=transcript)
                 
-                individual_file = analyzer.generate_individual_witness_json(results, "single_witness")
+                individual_file = analyzer.generate_individual_witness_json(results, "witness")
                 results["individual_file"] = individual_file
                 
                 analyzer.print_analysis_report(results)
@@ -312,7 +312,7 @@ def interactive_demo():
                 analyzer = WitnessReportAnalyzer()
                 results = analyzer.analyze_interview(transcript_text=transcript)
                 
-                individual_file = analyzer.generate_individual_witness_json(results, "single_witness")
+                individual_file = analyzer.generate_individual_witness_json(results, "witness")
                 results["individual_file"] = individual_file
                 
                 analyzer.print_analysis_report(results)
@@ -1596,4 +1596,4 @@ if __name__ == "__main__":
             print("Run with --audio, --json, or --text for single witness analysis")
     else:
         main()
-          
+            
