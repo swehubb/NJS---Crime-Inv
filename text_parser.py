@@ -29,10 +29,8 @@ class ForensicFeatures:
     emotions_detected: List[str]
 
 class ForensicTextExtractor:
-    """Extracts forensic features from structured text files"""
     
     def __init__(self):
-        """Initialize NLP models and components"""
         try:
             self.nlp = spacy.load("en_core_web_sm")
             
@@ -58,7 +56,6 @@ class ForensicTextExtractor:
             raise
     
     def load_structured_text(self, file_path: str) -> Dict:
-        """Load structured text data from file"""
         try:
             if file_path.endswith('.json'):
                 with open(file_path, 'r', encoding='utf-8') as f:
@@ -104,7 +101,6 @@ class ForensicTextExtractor:
             return {}
         
     def _convert_facts_to_text(self, facts: Dict) -> str:
-        """Convert confirmed facts dictionary to readable text"""
         text_parts = []
         
         if facts.get("crime_type"):
@@ -170,7 +166,6 @@ class ForensicTextExtractor:
         return ". ".join(text_parts)
         
     def extract_person_behavior(self, text: str) -> List[str]:
-        """Extract person behavior patterns"""
         behaviors = []
         
         behavior_patterns = [
@@ -193,7 +188,6 @@ class ForensicTextExtractor:
         return list(set(behaviors))
     
     def extract_background_setting(self, text: str) -> List[str]:
-        """Extract background and setting information"""
         settings = []
         
         location_patterns = [
@@ -216,7 +210,6 @@ class ForensicTextExtractor:
         return list(set(settings))
     
     def extract_actions(self, text: str) -> List[str]:
-        """Extract specific actions performed"""
         actions = []
         
         action_patterns = [
@@ -242,7 +235,6 @@ class ForensicTextExtractor:
         return list(set(actions))
     
     def extract_lighting(self, text: str) -> List[str]:
-        """Extract lighting conditions"""
         lighting = []
         
         lighting_patterns = [
@@ -260,7 +252,6 @@ class ForensicTextExtractor:
         return list(set(lighting))
     
     def extract_clothing(self, text: str) -> List[str]:
-        """Extract clothing descriptions"""
         clothing = []
         
         clothing_patterns = [
@@ -278,7 +269,6 @@ class ForensicTextExtractor:
         return list(set(clothing))
     
     def extract_facial_expressions(self, data: Dict) -> List[str]:
-        """Extract facial expressions from structured data"""
         expressions = []
         
         if "facial_expressions" in data and data["facial_expressions"]:
@@ -298,7 +288,6 @@ class ForensicTextExtractor:
         return list(set([expr.strip() for expr in expressions if expr.strip()]))
     
     def extract_body_language(self, data: Dict) -> List[str]:
-        """Extract body language from structured data"""
         body_lang = []
         
         if "body_language" in data and data["body_language"]:
@@ -319,7 +308,6 @@ class ForensicTextExtractor:
         return list(set([bl.strip() for bl in body_lang if bl.strip()]))
     
     def extract_timeline(self, text: str) -> List[str]:
-        """Extract timeline and sequence information"""
         timeline = []
         
         time_patterns = [
@@ -337,7 +325,6 @@ class ForensicTextExtractor:
         return list(set(timeline))
     
     def extract_objects_involved(self, text: str) -> List[str]:
-        """Extract objects and items involved in the scene"""
         objects = []
         
         doc = self.nlp(text)
@@ -358,7 +345,6 @@ class ForensicTextExtractor:
         return list(set(objects))
     
     def extract_emotions(self, text: str) -> List[str]:
-        """Extract emotions using AI models"""
         emotions = []
         
         try:
@@ -382,7 +368,6 @@ class ForensicTextExtractor:
         return emotions
     
     def extract_all_features(self, file_path: str) -> ForensicFeatures:
-        """Extract all forensic features from the text file"""
         data = self.load_structured_text(file_path)
         text_content = str(data.get("content", ""))
         
@@ -402,7 +387,6 @@ class ForensicTextExtractor:
         return features
 
 class DeeVidPromptGenerator:
-    """Generates DeeVid AI prompts using OpenAI"""
     
     def __init__(self):
         api_key = os.getenv("OPENAI_API_KEY")
@@ -505,22 +489,14 @@ class DeeVidPromptGenerator:
             return f"Error generating alternative scenario prompt: {e}"
 
 class ForensicT2VPipeline:
-    """Main pipeline class that orchestrates the entire process"""
     
     def __init__(self):
-        """Initialize the complete pipeline"""
         print("Initializing forensic text-to-video pipeline...")
         self.extractor = ForensicTextExtractor()
         self.prompt_generator = DeeVidPromptGenerator()
         print("Pipeline initialization complete.")
     
     def process_forensic_text(self, file_path: str) -> Tuple[str, str]:
-        """
-        Process forensic text file and generate both DeeVid prompts
-        
-        Returns:
-            Tuple[str, str]: (known_scenario_prompt, alternative_scenario_prompt)
-        """
         print(f"Processing file: {file_path}")
         
         print("Extracting features...")
@@ -534,7 +510,6 @@ class ForensicT2VPipeline:
         return known_prompt, alternative_prompt
     
     def save_prompts(self, known_prompt: str, alternative_prompt: str, output_dir: str = "output"):
-        """Save generated prompts to files"""
         os.makedirs(output_dir, exist_ok=True)
         
         with open(f"{output_dir}/known_scenario_prompt.txt", 'w', encoding='utf-8') as f:
@@ -545,7 +520,6 @@ class ForensicT2VPipeline:
         
         print(f"Prompts saved to {output_dir}/")
 
-# Example usage and testing
 if __name__ == "__main__":
     try:
         pipeline = ForensicT2VPipeline()
