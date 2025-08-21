@@ -5,13 +5,13 @@ from openai import OpenAI
 from transformers import pipeline
 from empath import Empath
 import json
-from typing import Dict, List, Tuple, Any
 import argparse
 from datetime import datetime
 import re
 import ffmpeg
 from dotenv import load_dotenv
 import sys
+from typing import Dict, List, Tuple, Any, Optional 
 
 def load_transcript_from_json(file_path: str) -> str:
 
@@ -98,14 +98,11 @@ def multi_witness_demo():
                 'audio_path': audio_file
             })
         
-        use_api = False
-        if os.getenv('OPENAI_API_KEY'):
-            use_api_input = input("Use OpenAI API for transcription? (y/n, default: n): ").strip().lower()
-            use_api = use_api_input in ['y', 'yes']
-        
-        model_size = input("Whisper model size (tiny/base/small/medium/large, default: base): ").strip() or "base"
-        
+        use_api = True
+        model_size = "base"  
+
         print(f"\nAnalyzing {len(witness_inputs)} witnesses...")
+
         results = analyzer.analyze_multiple_witnesses(
             witness_inputs=witness_inputs,
             use_api=use_api,
@@ -368,7 +365,7 @@ class WitnessReportAnalyzer:
                             choices=["tiny", "base", "small", "medium", "large"],
                             help="Whisper model size (default: base)")
         parser.add_argument("--output", help="Output JSON file path for single witness")
-        parser.add_argument("--summary-output", default="witness_summary.json", 
+        parser.add_argument("--summary-output", default="witness.json", 
                             help="Output summary file for multi-witness analysis")
     
         args = parser.parse_args()
@@ -469,12 +466,8 @@ class WitnessReportAnalyzer:
             print(f"Analysis saved to: {args.output}")
 
     def _initialize_models(self):
-       
-        try:
-            self.whisper_model = whisper.load_model("small")
-        except Exception as e:
-            pass
-       
+        self.whisper_model = None
+   
         try:
             self.sentiment_classifier = pipeline("sentiment-analysis")
         except Exception as e:
@@ -492,67 +485,97 @@ class WitnessReportAnalyzer:
        
         print("Models loaded successfully")
 
-    def transcribe_audio(self, audio_path: str, use_api: bool = False, model_size: str = "base") -> Dict[str, Any]:
-   
+
+    def transcribe_audio(self, audio_path: str, use_api: bool = False, model_size: str = "base") -> Optional[Dict[str, Any]]:
         print(f"Transcribing audio: {os.path.basename(audio_path)}")
-       
+
         if not os.path.exists(audio_path):
+            print(f"ERROR: File not found: {audio_path}")
             return None
-           
+
         file_size = os.path.getsize(audio_path) / (1024 * 1024)
-        
+        print(f"File size: {file_size:.2f} MB")
+
         supported_formats = ['.mp3', '.wav', '.m4a', '.flac', '.ogg', '.wma', '.aac']
         file_ext = os.path.splitext(audio_path)[1].lower()
-       
+        
         if file_ext not in supported_formats:
             print(f"WARNING: Unsupported format: {file_ext}")
-       
-        if use_api and self.openai_client:
+            print(f"Supported formats: {supported_formats}")
+
+        if use_api:
             try:
-                print("Processing with OpenAI API...")
-                with open(audio_path, "rb") as audio_file:
-                    transcript = self.openai_client.audio.transcriptions.create(
-                        model="whisper-1",
-                        file=audio_file,
-                        response_format="verbose_json"
+                print("Processing with Hugging Face model (jensenlwt/whisper-small-singlish-122k)...")
+
+                if not hasattr(self, "hf_pipeline"):
+                    print("Loading HF pipeline...")
+                    self.hf_pipeline = pipeline(
+                        task="automatic-speech-recognition",
+                        model="jensenlwt/whisper-small-singlish-122k",
+                        device=-1 
                     )
-               
+                    print("HF pipeline loaded successfully")
+
+                print("Running transcription...")
+                result = self.hf_pipeline(audio_path, return_timestamps=True)
+                print("HF transcription completed")
+
                 return {
-                    "text": transcript.text,
-                    "segments": getattr(transcript, 'segments', []),
-                    "language": getattr(transcript, 'language', 'unknown'),
-                    "duration": getattr(transcript, 'duration', 0),
+                    "text": result["text"],
+                    "segments": result.get("chunks", []),
+                    "language": "singlish", 
+                    "duration": 0,  
                     "method": "api",
-                    "model": "whisper-1"
+                                        "model": "openai/whisper-small",
+                    "word_count": len(result["text"].split()) if result["text"] else 0
                 }
-            except Exception as e:
-                print("API failed, using local model...")
+                
+            except ImportError as e:
+                print(f"ERROR: Missing transformers library: {e}")
                 use_api = False
-       
+            except Exception as e:
+                print(f"ERROR: HF API failed: {type(e).__name__}: {e}")
+                print("Falling back to local model...")
+                use_api = False
+
         if not use_api:
             try:
-                if not self.whisper_model or (hasattr(self, '_model_size') and self._model_size != model_size):
+                if not hasattr(self, 'whisper_model') or not self.whisper_model:
                     print(f"Loading Whisper model ({model_size})...")
                     self.whisper_model = whisper.load_model(model_size)
                     self._model_size = model_size
-               
-                print("Transcribing audio...")
-               
+                    print("Whisper model loaded successfully")
+                elif hasattr(self, '_model_size') and self._model_size != model_size:
+                    print(f"Switching Whisper model from {self._model_size} to {model_size}...")
+                    self.whisper_model = whisper.load_model(model_size)
+                    self._model_size = model_size
+
+                print("Running local transcription...")
                 result = self.whisper_model.transcribe(
                     audio_path,
                     verbose=False
                 )
-               
+                print("Local transcription completed")
+
                 return {
                     "text": result["text"],
                     "segments": result["segments"],
                     "language": result.get("language", "unknown"),
                     "method": "local",
                     "model": model_size,
-                    "word_count": len(result["text"].split())
+                    "word_count": len(result["text"].split()) if result.get("text") else 0
                 }
-            except Exception as e:
+                
+            except ImportError as e:
+                print(f"ERROR: Missing whisper library: {e}")
+                print("Install with: pip install openai-whisper")
                 return None
+            except Exception as e:
+                print(f"ERROR: Local transcription failed: {type(e).__name__}: {e}")
+                return None
+
+        return None
+
 
     def analyze_sentiment(self, text: str) -> Dict[str, Any]:
        
@@ -1187,7 +1210,7 @@ class WitnessReportAnalyzer:
         except Exception as e:
             return {"error": f"Cross-verification failed: {e}"}
 
-    def generate_simplified_summary_json(self, witness_data: List[Dict[str, Any]], output_path: str = "witness_summary.json") -> str:
+    def generate_simplified_summary_json(self, witness_data: List[Dict[str, Any]], output_path: str = "witness.json") -> str:
         print("Generating witness summary...")
         
         witness_facts = []
@@ -1335,7 +1358,7 @@ class WitnessReportAnalyzer:
             return {"error": "No valid witness data"}
         
         print("Generating cross-verification and summary...")
-        summary_file = self.generate_simplified_summary_json(all_witness_data, "witness_summary.json")
+        summary_file = self.generate_simplified_summary_json(all_witness_data, "witness.json")
         
         print("Multi-witness analysis complete")
         
@@ -1596,4 +1619,3 @@ if __name__ == "__main__":
             print("Run with --audio, --json, or --text for single witness analysis")
     else:
         main()
-            
